@@ -1,0 +1,162 @@
+---
+title: "Wine Quality Prediction"
+author: By WCui
+date: August, 2020
+output: html_document
+---
+<br />
+
+#### **Object: Build a predictive model to forecast the wine quality. **
+<br />
+
+#### 1. Load Library and data preprocessing
+```{r echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(ggplot2)
+library(ggthemes)
+library(corrplot)
+library(reshape2)
+library(dplyr)
+library(randomForest)
+```
+First, we will have a peek at the dataset.
+```{r}
+redwine = read.csv("winequality_red.csv")
+
+redwine$good.wine = ifelse(redwine$quality>6,1,0)
+
+str(redwine)
+
+summary(redwine)
+```
+<br />
+
+
+#### 2. Data Visulization (ggplot)
+Next, we will explore the correlation among the variables.
+```{r}
+plot(redwine)
+
+corrplot(cor(redwine))
+```
+Let's see how the wine quality distributed. 
+```{r}
+ggplot(redwine,aes(x = quality))+geom_bar(stat = "count",position = "dodge")+
+  scale_x_continuous(breaks = seq(3,8,1))+
+  ggtitle("Distribution of Red Wine Quality Ratings")+
+  theme_bw()
+```
+```{r}
+ggplot(redwine,aes(x=good.wine,fill=factor(good.wine)))+geom_bar(stat = "count",position = "dodge")+
+  scale_x_continuous(breaks = seq(0,1,1))+
+  ggtitle("Distribution of Good/Bad Red Wines")+
+  theme_bw()
+```
+Effect of physiochemical properties on the wine quality
+```{r}
+ggplot(redwine,aes(x=fixed.acidity,fill=factor(good.wine)))+geom_density(alpha=0.25)+
+  geom_vline(aes(xintercept=mean(fixed.acidity[good.wine==0],na.rm=T)),color="red",linetype="dashed",lwd=1)+
+  geom_vline(aes(xintercept=mean(fixed.acidity[good.wine==1],na.rm=T)),color="blue",linetype="dashed",lwd=1)+
+  scale_x_continuous(breaks = seq(4,16,1))+
+  xlab(label = "Fixed Acidity Level")+
+  ggtitle("Distribution of Fixed Acidity Levels")+
+  theme_bw()
+```
+```{r}
+ggplot(redwine,aes(x=volatile.acidity,fill=factor(good.wine)))+geom_density(alpha=0.25)+
+  geom_vline(aes(xintercept=mean(volatile.acidity[good.wine==0],na.rm=T)),color="red",linetype="dashed",lwd=1)+
+  geom_vline(aes(xintercept=mean(volatile.acidity[good.wine==1],na.rm=T)),color="blue",linetype="dashed",lwd=1)+
+  scale_x_continuous(breaks = seq(0,1.6,0.1))+
+  xlab(label = "Volatile Acidity Level")+
+  ggtitle("Distribution of Volatile Acidity Levels")+
+  theme_bw()
+```
+```{r}
+ggplot(redwine,aes(x=citric.acid,fill=factor(good.wine)))+geom_density(alpha=0.25)+
+  geom_vline(aes(xintercept=mean(citric.acid[good.wine==0],na.rm=T)),color="red",linetype="dashed",lwd=1)+
+  geom_vline(aes(xintercept=mean(citric.acid[good.wine==1],na.rm=T)),color="blue",linetype="dashed",lwd=1)+
+  scale_x_continuous(breaks = seq(0,1,0.1))+
+  xlab(label = "Citric Acid Level")+
+  ggtitle("Distribution of Citric Acid Levels")+
+  theme_bw()
+```
+```{r}
+ggplot(redwine,aes(x=residual.sugar,fill=factor(good.wine)))+geom_density(alpha=0.25)+
+  geom_vline(aes(xintercept=mean(residual.sugar[good.wine==0],na.rm=T)),color="red",linetype="dashed",lwd=1)+
+  geom_vline(aes(xintercept=mean(residual.sugar[good.wine==1],na.rm=T)),color="blue",linetype="dashed",lwd=1)+
+  scale_x_continuous(breaks = seq(0.5,15.5,1))+
+  xlab(label = "Residual Sugar Level")+
+  ggtitle("Distribution of Residual Sugar Levels")+
+  theme_bw()
+```
+```{r}
+ggplot(redwine,aes(x=chlorides,fill=factor(good.wine)))+geom_density(alpha=0.25)+
+  geom_vline(aes(xintercept=mean(chlorides[good.wine==0],na.rm=T)),color="red",linetype="dashed",lwd=1)+
+  geom_vline(aes(xintercept=mean(chlorides[good.wine==1],na.rm=T)),color="blue",linetype="dashed",lwd=1)+
+  scale_x_continuous(breaks = seq(0.01,0.62,0.1))+
+  xlab(label = "Chlorides Level")+
+  ggtitle("Distribution of Chlorides Levels")+
+  theme_bw()
+```
+```{r}
+ggplot(redwine,aes(x=free.sulfur.dioxide,fill=factor(good.wine)))+geom_density(alpha=0.25)+
+  geom_vline(aes(xintercept=mean(free.sulfur.dioxide[good.wine==0],na.rm=T)),color="red",linetype="dashed",lwd=1)+
+  geom_vline(aes(xintercept=mean(free.sulfur.dioxide[good.wine==1],na.rm=T)),color="blue",linetype="dashed",lwd=1)+
+  scale_x_continuous(breaks = seq(0,72,8))+
+  xlab(label = "Free Sulfur Dioxide Level")+
+  ggtitle("Distribution of Free Sulfur Dioxide Levels")+
+  theme_bw()
+```
+```{r}
+ggplot(redwine,aes(x=total.sulfur.dioxide,fill=factor(good.wine)))+geom_density(alpha=0.25)+
+  geom_vline(aes(xintercept=mean(total.sulfur.dioxide[good.wine==0],na.rm=T)),color="red",linetype="dashed",lwd=1)+
+  geom_vline(aes(xintercept=mean(total.sulfur.dioxide[good.wine==1],na.rm=T)),color="blue",linetype="dashed",lwd=1)+
+  scale_x_continuous(breaks = seq(0,300,20))+
+  xlab(label = "Total Sulfur Dioxide Level")+
+  ggtitle("Distribution of Total Sulfur Dioxide Levels")+
+  theme_bw()
+```
+```{r}
+ggplot(redwine,aes(x=alcohol,fill=factor(good.wine)))+geom_density(alpha=0.25)+
+  geom_vline(aes(xintercept=mean(alcohol[good.wine==0],na.rm=T)),color="red",linetype="dashed",lwd=1)+
+  geom_vline(aes(xintercept=mean(alcohol[good.wine==1],na.rm=T)),color="blue",linetype="dashed",lwd=1)+
+  scale_x_continuous(breaks = seq(8,15,1))+
+  xlab(label = "Alcohol Level")+
+  ggtitle("Distribution of Alcohol Levels")+
+  theme_bw()
+```
+<br />
+
+
+#### 3. Predictive Modeling by Random Forest
+<br />
+
+##### 3.1 Model Fit
+```{r}
+redwineRF = randomForest(factor(good.wine)~.-quality, redwine, ntree = 200)
+redwineRF
+```
+The classification accuracy reach to ~92%. 
+<br />
+
+##### 3.2 Variable Importance
+```{r}
+importance = importance(redwineRF)
+varImportance = data.frame(Variables = row.names(importance), 
+                            Importance = round(importance[ ,'MeanDecreaseGini'],2))
+
+rankImportance = varImportance %>%
+  mutate(Rank = paste0('#',dense_rank(desc(Importance))))
+
+ggplot(rankImportance, aes(x = reorder(Variables, Importance), 
+                           y = Importance, fill = Importance)) +
+  geom_bar(stat='identity') + 
+  geom_text(aes(x = Variables, y = 0.5, label = Rank),
+            hjust=0, vjust=0.3, size = 5, colour = 'red') +
+  labs(x = 'Variables') +
+  coord_flip() + 
+  theme_bw()
+```
+<br />
+
+
+The alcohol has the highest importance among the features, which is consistent with the density plot observation. 
