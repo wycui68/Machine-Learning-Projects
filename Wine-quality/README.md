@@ -1,5 +1,6 @@
 
-### Title : Prediction of wine quality
+### Title
+Prediction of wine quality
 
 ### Objective
 Explore the wine quality dataset and predict the wine quality base off physiochemical properties. 
